@@ -40,9 +40,10 @@ pipeline {
 
                     echo "Changed files:\n${changedFiles}"
 
-                    env.BUILD_VOTING = changedFiles.contains('voting/')  ? 'true' : 'false'
+                    env.BUILD_VOTING = changedFiles.contains('vote/')    ? 'true' : 'false'
                     env.BUILD_WORKER = changedFiles.contains('worker/')  ? 'true' : 'false'
                     env.BUILD_RESULT = changedFiles.contains('result/')  ? 'true' : 'false'
+
                 }
             }
         }
