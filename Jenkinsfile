@@ -102,27 +102,29 @@ pipeline {
                 stage('Voting') {
                     when { expression { env.BUILD_VOTING == 'true' } }
                     steps {
-                        withCredentials([file(
-                            credentialsId: 'kubeconfig',
-                            variable: 'KUBECONFIG'
-                        )]) {
-                            sh """
-                                docker build \
-                                    -t ${DOCKER_USER}/voting:${DOCKER_TAG} \
-                                    -t ${DOCKER_USER}/voting:latest \
-                                    ./voting
+                        withCredentials([string(
+    credentialsId: 'kubeconfig',
+    variable: 'KUBECONFIG_CONTENT'
+)]) {
+    sh """
+        echo "$KUBECONFIG_CONTENT" > kubeconfig
+        export KUBECONFIG=\$(pwd)/kubeconfig
 
-                                docker push ${DOCKER_USER}/voting:${DOCKER_TAG}
-                                docker push ${DOCKER_USER}/voting:latest
+        docker build \
+            -t ${DOCKER_USER}/voting:${DOCKER_TAG} \
+            -t ${DOCKER_USER}/voting:latest \
+            ./voting
 
-                                kubectl set image deployment/voting \
-                                    voting=${DOCKER_USER}/voting:${DOCKER_TAG}
+        docker push ${DOCKER_USER}/voting:${DOCKER_TAG}
+        docker push ${DOCKER_USER}/voting:latest
 
-                                kubectl rollout status deployment/voting --timeout=120s \
-                                    || (kubectl rollout undo deployment/voting && exit 1)
-                            """
-                        }
-                    }
+        kubectl set image deployment/voting \
+            voting=${DOCKER_USER}/voting:${DOCKER_TAG}
+
+        kubectl rollout status deployment/voting --timeout=120s \
+            || (kubectl rollout undo deployment/voting && exit 1)
+    """
+}
                 }
 
                 stage('Worker') {
