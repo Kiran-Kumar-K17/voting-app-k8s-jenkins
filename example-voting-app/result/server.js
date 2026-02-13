@@ -8,7 +8,6 @@ var express = require("express"),
 
 var port = process.env.PORT || 4000;
 
-//Hello
 io.on("connection", function (socket) {
   socket.emit("message", { text: "Welcome!" });
 
