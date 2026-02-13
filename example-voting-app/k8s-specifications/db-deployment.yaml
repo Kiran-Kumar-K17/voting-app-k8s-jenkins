@@ -19,8 +19,6 @@ spec:
               value: postgres
             - name: POSTGRES_PASSWORD
               value: postgres
-            - name: POSTGRES_DB
-              value: votes
           ports:
             - containerPort: 5432
   selector:
