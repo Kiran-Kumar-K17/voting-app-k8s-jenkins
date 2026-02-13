@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
     node.vm.network "private_network", ip: "192.168.56.11"
     node.vm.provider "virtualbox" do |vb|
       vb.memory = 2048
-      vb.cpus = 2
+      vb.cpus = 1
     end
   end
 
@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
     node.vm.network "private_network", ip: "192.168.56.12"
     node.vm.provider "virtualbox" do |vb|
       vb.memory = 2048
-      vb.cpus = 2
+      vb.cpus = 1
     end
   end
 
@@ -39,8 +39,8 @@ Vagrant.configure("2") do |config|
     jenkins.vm.network "private_network", ip: "192.168.56.13"
     jenkins.vm.network "forwarded_port", guest: 8080, host: 8080
     jenkins.vm.provider "virtualbox" do |vb|
-      vb.memory = 2048
-      vb.cpus = 2
+      vb.memory = 4096
+      vb.cpus = 3
     end
   end
 
