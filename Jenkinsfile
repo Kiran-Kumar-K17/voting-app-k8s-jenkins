@@ -15,7 +15,7 @@ pipeline {
             }
         }
 
-        sstage('Detect Changes') {
+        stage('Detect Changes') {
     steps {
         script {
 
