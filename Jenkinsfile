@@ -8,6 +8,9 @@ pipeline {
 
     stages {
 
+        // --------------------------------------------------
+        // 1️⃣ Checkout
+        // --------------------------------------------------
         stage('Checkout') {
             steps {
                 checkout scm
@@ -15,40 +18,58 @@ pipeline {
             }
         }
 
+        // --------------------------------------------------
+        // 2️⃣ Detect Changes (Safe Version)
+        // --------------------------------------------------
         stage('Detect Changes') {
-    steps {
-        script {
+            steps {
+                script {
 
-            def currentCommit = sh(
-                script: "git rev-parse HEAD",
-                returnStdout: true
-            ).trim()
+                    def currentCommit = sh(
+                        script: "git rev-parse HEAD",
+                        returnStdout: true
+                    ).trim()
 
-            def lastSuccessfulCommit = currentBuild.rawBuild.getPreviousSuccessfulBuild()?.getEnvironment(listener)?.get('GIT_COMMIT')
+                    echo "Current Commit: ${currentCommit}"
 
-            if (!lastSuccessfulCommit) {
-                echo "No previous successful build found. Building everything."
-                env.BUILD_VOTING = 'true'
-                env.BUILD_WORKER = 'true'
-                env.BUILD_RESULT = 'true'
-                return
+                    def lastCommit = ""
+
+                    if (fileExists('.last_successful_commit')) {
+                        lastCommit = readFile('.last_successful_commit').trim()
+                        echo "Last Successful Commit: ${lastCommit}"
+                    } else {
+                        echo "No previous successful build found. Building everything."
+                        env.BUILD_VOTING = 'true'
+                        env.BUILD_WORKER = 'true'
+                        env.BUILD_RESULT = 'true'
+                        return
+                    }
+
+                    if (lastCommit == currentCommit) {
+                        echo "No new commit detected. Skipping build."
+                        env.BUILD_VOTING = 'false'
+                        env.BUILD_WORKER = 'false'
+                        env.BUILD_RESULT = 'false'
+                        return
+                    }
+
+                    def changedFiles = sh(
+                        script: "git diff --name-only ${lastCommit} ${currentCommit}",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Changed files:\n${changedFiles}"
+
+                    env.BUILD_VOTING = changedFiles.contains('vote/')   ? 'true' : 'false'
+                    env.BUILD_WORKER = changedFiles.contains('worker/') ? 'true' : 'false'
+                    env.BUILD_RESULT = changedFiles.contains('result/') ? 'true' : 'false'
+                }
             }
-
-            def changedFiles = sh(
-                script: "git diff --name-only ${lastSuccessfulCommit} ${currentCommit}",
-                returnStdout: true
-            ).trim()
-
-            echo "Changed files:\n${changedFiles}"
-
-            env.BUILD_VOTING = changedFiles.contains('vote/')   ? 'true' : 'false'
-            env.BUILD_WORKER = changedFiles.contains('worker/') ? 'true' : 'false'
-            env.BUILD_RESULT = changedFiles.contains('result/') ? 'true' : 'false'
         }
-    }
-}
 
-
+        // --------------------------------------------------
+        // 3️⃣ No Changes
+        // --------------------------------------------------
         stage('No Changes') {
             when {
                 expression {
@@ -58,10 +79,13 @@ pipeline {
                 }
             }
             steps {
-                echo "No service code changes detected."
+                echo "No service changes detected. Pipeline exiting."
             }
         }
 
+        // --------------------------------------------------
+        // 4️⃣ Docker Login
+        // --------------------------------------------------
         stage('Docker Login') {
             when {
                 expression {
@@ -83,6 +107,9 @@ pipeline {
             }
         }
 
+        // --------------------------------------------------
+        // 5️⃣ Build & Deploy (Parallel)
+        // --------------------------------------------------
         stage('Build & Deploy Services') {
             when {
                 expression {
@@ -118,21 +145,34 @@ pipeline {
         }
     }
 
+    // --------------------------------------------------
+    // POST ACTIONS
+    // --------------------------------------------------
     post {
+
         always {
             sh 'docker logout || true'
         }
 
         success {
             script {
+
+                // Save current commit for next comparison
+                def currentCommit = sh(
+                    script: "git rev-parse HEAD",
+                    returnStdout: true
+                ).trim()
+
+                writeFile file: '.last_successful_commit', text: currentCommit
+
                 def deployed = []
                 if (env.BUILD_VOTING == 'true') deployed << "voting:${DOCKER_TAG}"
                 if (env.BUILD_WORKER == 'true') deployed << "worker:${DOCKER_TAG}"
                 if (env.BUILD_RESULT == 'true') deployed << "result:${DOCKER_TAG}"
 
                 currentBuild.description = deployed ?
-                    "Deployed: ${deployed.join(', ')}" :
-                    "No services changed — nothing deployed"
+                        "Deployed: ${deployed.join(', ')}" :
+                        "No services changed — nothing deployed"
             }
         }
 
@@ -143,6 +183,9 @@ pipeline {
 }
 
 
+// ==========================================================
+// 🔥 Deploy Function
+// ==========================================================
 def deployService(folderName, deploymentName) {
 
     withCredentials([file(
