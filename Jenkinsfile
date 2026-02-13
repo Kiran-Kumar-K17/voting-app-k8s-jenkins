@@ -195,8 +195,8 @@ pipeline {
             script {
                 // Get NodePorts for access URLs
                 withKubeConfig([credentialsId: 'k8s-token', serverUrl: K8S_SERVER]) {
-                    def voting_port = sh(script: "kubectl get svc -n ${NAMESPACE} voting-service -o jsonpath='{.spec.ports[0].nodePort}'", returnStdout: true).trim()
-                    def result_port = sh(script: "kubectl get svc -n ${NAMESPACE} result-service -o jsonpath='{.spec.ports[0].nodePort}'", returnStdout: true).trim()
+                    def voting_port = sh(script: "kubectl get svc -n ${NAMESPACE} voting -o jsonpath='{.spec.ports[0].nodePort}'", returnStdout: true).trim()
+def result_port = sh(script: "kubectl get svc -n ${NAMESPACE} result -o jsonpath='{.spec.ports[0].nodePort}'", returnStdout: true).trim()
                     
                     def updatedServices = []
                     if (env.VOTE_CHANGED == 'true') updatedServices.add('Vote')
