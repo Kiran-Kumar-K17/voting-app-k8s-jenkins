@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: dockersamples/examplevotingapp_worker
+          image: kirankumark17/worker:latest
   selector:
     matchLabels:
       app: worker
