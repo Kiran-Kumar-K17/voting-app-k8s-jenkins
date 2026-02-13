@@ -46,11 +46,30 @@ pipeline {
                 }
             }
         }
+        stage('No Changes') {
+            when {
+                expression {
+                    env.BUILD_VOTING == 'false' &&
+                    env.BUILD_WORKER == 'false' &&
+                    env.BUILD_RESULT == 'false'
+                            }
+        }
+    steps {
+        echo "No service code changes detected."
+    }
+}
 
         // ─────────────────────────────────────────────
         // 3. Docker Login
         // ─────────────────────────────────────────────
         stage('Docker Login') {
+            when {
+        expression {
+            env.BUILD_VOTING == 'true' ||
+            env.BUILD_WORKER == 'true' ||
+            env.BUILD_RESULT == 'true'
+        }
+    }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
@@ -70,6 +89,13 @@ pipeline {
         //      • Verifies the rollout; undoes on failure
         // ─────────────────────────────────────────────
         stage('Build & Deploy Services') {
+            when {
+        expression {
+            env.BUILD_VOTING == 'true' ||
+            env.BUILD_WORKER == 'true' ||
+            env.BUILD_RESULT == 'true'
+        }
+    }
             parallel {
 
                 stage('Voting') {
