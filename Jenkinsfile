@@ -15,28 +15,39 @@ pipeline {
             }
         }
 
-        stage('Detect Changes') {
-            steps {
-                script {
-                    def changedFiles = sh(
-                        script: """
-                            if git rev-parse HEAD~1 > /dev/null 2>&1; then
-                                git diff --name-only HEAD~1 HEAD
-                            else
-                                git diff --name-only HEAD
-                            fi
-                        """,
-                        returnStdout: true
-                    ).trim()
+        sstage('Detect Changes') {
+    steps {
+        script {
 
-                    echo "Changed files:\n${changedFiles}"
+            def currentCommit = sh(
+                script: "git rev-parse HEAD",
+                returnStdout: true
+            ).trim()
 
-                    env.BUILD_VOTING = changedFiles.contains('vote/')   ? 'true' : 'false'
-                    env.BUILD_WORKER = changedFiles.contains('worker/') ? 'true' : 'false'
-                    env.BUILD_RESULT = changedFiles.contains('result/') ? 'true' : 'false'
-                }
+            def lastSuccessfulCommit = currentBuild.rawBuild.getPreviousSuccessfulBuild()?.getEnvironment(listener)?.get('GIT_COMMIT')
+
+            if (!lastSuccessfulCommit) {
+                echo "No previous successful build found. Building everything."
+                env.BUILD_VOTING = 'true'
+                env.BUILD_WORKER = 'true'
+                env.BUILD_RESULT = 'true'
+                return
             }
+
+            def changedFiles = sh(
+                script: "git diff --name-only ${lastSuccessfulCommit} ${currentCommit}",
+                returnStdout: true
+            ).trim()
+
+            echo "Changed files:\n${changedFiles}"
+
+            env.BUILD_VOTING = changedFiles.contains('vote/')   ? 'true' : 'false'
+            env.BUILD_WORKER = changedFiles.contains('worker/') ? 'true' : 'false'
+            env.BUILD_RESULT = changedFiles.contains('result/') ? 'true' : 'false'
         }
+    }
+}
+
 
         stage('No Changes') {
             when {
