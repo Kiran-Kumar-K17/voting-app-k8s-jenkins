@@ -131,14 +131,16 @@ pipeline {
     }
 }
 
+
 def deployService(folderName, deploymentName) {
-    withCredentials([string(
+
+    withCredentials([file(
         credentialsId: 'kubeconfig',
-        variable: 'KUBECONFIG_CONTENT'
+        variable: 'KUBECONFIG'
     )]) {
+
         sh """
-            echo "\$KUBECONFIG_CONTENT" > kubeconfig
-            export KUBECONFIG=\$(pwd)/kubeconfig
+            export KUBECONFIG=${KUBECONFIG}
 
             docker build \
                 -t ${DOCKER_USER}/${deploymentName}:${DOCKER_TAG} \
