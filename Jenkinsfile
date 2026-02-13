@@ -204,7 +204,7 @@ pipeline {
                 
                 🌐 Access your application:
                 
-                🗳️  Voting App: http://192.168.56.12:${voting_port}
+                🗳️  Voting App: http://192.168.56.11:${voting_port}
                 📊 Result App: http://192.168.56.12:${result_port}
                 
                 🔄 Worker1 is being fixed - use worker2 for now
