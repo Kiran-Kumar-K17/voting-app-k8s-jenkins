@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting
+  labels:
+    app: voting
+spec:
+  template:
+    metadata:
+      name: voting
+      labels:
+        app: voting
+    spec:
+      containers:
+        - name: voting
+          image: kirankumark17/voting:latest
+          ports:
+            - containerPort: 80
+  selector:
+    matchLabels:
+      app: voting

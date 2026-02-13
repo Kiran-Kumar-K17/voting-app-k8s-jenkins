@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: result
+  labels:
+    app: result
+spec:
+  template:
+    metadata:
+      name: result
+      labels:
+        app: result
+    spec:
+      containers:
+        - name: result
+          image: kirankumark17/result:latest
+          ports:
+            - containerPort: 80
+  selector:
+    matchLabels:
+      app: result
